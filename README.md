@@ -33,43 +33,6 @@ Forecast Model (Next-Hour AQI)
 ↓
 Dashboard Visualization
 
-
----
-
-## 📁 Project Structure
-
-
-
-AQI-Prediction-Platform/
-│
-├── app/
-│ ├── backend/
-│ │ ├── app.py # Flask backend
-│ │ └── database/
-│ │ └── db.py # SQLite operations
-│ └── frontend/
-│ └── index.html # Web dashboard UI
-│
-├── data/
-│ ├── raw/ # Original Kaggle dataset
-│ └── processed/ # Cleaned dataset
-│
-├── notebooks/
-│ ├── 01_data_cleaning.ipynb
-│ ├── 02_live_api_testing.ipynb
-│ ├── 03_model_training.ipynb
-│ └── 04_aqi_forecasting.ipynb
-│
-├── models/
-│ ├── aqi_model.pkl # Current AQI ML model
-│ └── aqi_forecast_model.pkl # Next-hour Forecast model
-│
-├── requirements.txt
-└── README.md
-
-
----
-
 ## ⚙️ Tech Stack
 
 - Python  
@@ -87,25 +50,24 @@ AQI-Prediction-Platform/
 
 ### 1️⃣ Install dependencies
 
-```bash
 pip install -r requirements.txt
 
-2️⃣ Start Flask Backend
+### 2️⃣ Start Flask Backend
+
 cd app/backend
 python app.py
-
 
 Backend runs at:
 
 http://127.0.0.1:5000/
 
-3️⃣ Open Frontend
+### 3️⃣ Open Frontend
 
 Open this file in your browser:
 
 app/frontend/index.html
 
-📊 Dashboard Features
+## 📊 Dashboard Features
 
 Current AQI prediction
 
@@ -115,7 +77,7 @@ AQI history trend chart
 
 Multi-city live monitoring
 
-🎯 Model Performance
+## 🎯 Model Performance
 
 Current AQI Model
 
@@ -129,7 +91,7 @@ Forecast Model
 
 MAE: ≈ 5 AQI units
 
-🌟 Project Highlights
+## 🌟 Project Highlights
 
 Real-time integration with government sensor data
 

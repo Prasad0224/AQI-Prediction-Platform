@@ -7,46 +7,44 @@ import joblib
 from database.db import init_db, insert_record, fetch_history
 
 app = Flask(__name__)
-CORS(app) 
+CORS(app)
 
-# Load trained model
+# =====================
+# Load Models
+# =====================
 model = joblib.load("../../models/aqi_model.pkl")
 forecast_model = joblib.load("../../models/aqi_forecast_model.pkl")
 
-# Load training medians for live data filling
+# Load medians for missing pollutant filling
 train_df = pd.read_csv("../../data/processed/aqi_clean.csv")
 median_values = train_df[["PM2.5","PM10","NO2","SO2","CO","O3","NH3"]].median()
 
+# Initialize database
 init_db()
 
-def get_last_aqi_sequence(city, length=5):
-    data = fetch_history(city)
-    
-    # data = [(aqi, timestamp), ...] newest first
-    aqi_values = [row[0] for row in data]
-    
-    if len(aqi_values) < length:
-        return None  # not enough data yet
-    
-    return aqi_values[:length][::-1]  # oldest → newest
-
-# Government API details
+# =====================
+# API Config
+# =====================
 API_KEY = "579b464db66ec23bdd000001ba7c83c075784fde7ead526137a405e4"
 AQI_URL = "https://api.data.gov.in/resource/3b01bcb8-0b14-4abf-b6f2-c1bfd384ba69"
 
-# City coordinates for weather
-CITY_COORDS = {
-    "Delhi": (28.61, 77.20),
-    "Mumbai": (19.07, 72.87),
-    "Pune": (18.52, 73.85),
-    "Bengaluru": (12.97, 77.59),
-    "Chennai": (13.08, 80.27)
-}
+# =====================
+# Helper for forecast
+# =====================
+def get_last_aqi_sequence(city, length=5):
+    data = fetch_history(city, limit=length)
+    aqi_values = [row[0] for row in data]
+    if len(aqi_values) < length:
+        return None
+    return aqi_values[::-1]
+
+# =====================
+# Routes
+# =====================
 
 @app.route("/predict/<city>")
 def predict(city):
 
-    # --- Fetch live pollutant data ---
     params = {
         "api-key": API_KEY,
         "format": "json",
@@ -54,86 +52,107 @@ def predict(city):
         "limit": 100
     }
 
-    response = requests.get(AQI_URL, params=params)
-    data = response.json()["records"]
+    r = requests.get(AQI_URL, params=params)
+    try:
+        records = r.json().get("records", [])
+    except:
+        return jsonify({"error": "API response error"})
 
-    df = pd.DataFrame(data)[["pollutant_id", "avg_value"]]
+    if not records:
+        return jsonify({"error": "No live data for this city"})
 
+    df = pd.DataFrame(records)[["pollutant_id","avg_value"]]
     df["avg_value"] = pd.to_numeric(df["avg_value"], errors="coerce")
-
 
     pivot = df.pivot_table(values="avg_value", columns="pollutant_id", aggfunc="first")
 
-    # Clean column names
     pivot.columns = [c.lower().replace('.', '') for c in pivot.columns]
-    pivot = pivot.rename(columns={"pm25":"PM2.5", "pm10":"PM10",
-                                   "no2":"NO2", "so2":"SO2",
-                                   "co":"CO", "ozone":"O3",
-                                   "nh3":"NH3"})
-    
-    pivot["CO"] = pivot["CO"]/1000
-    pivot = pivot.fillna(median_values)
-    
-    pivot = pivot[["PM2.5", "PM10", "NO2", "SO2", "CO", "O3", "NH3"]]
+    pivot = pivot.rename(columns={
+        "pm25":"PM2.5",
+        "pm10":"PM10",
+        "no2":"NO2",
+        "so2":"SO2",
+        "co":"CO",
+        "ozone":"O3",
+        "nh3":"NH3"
+    })
 
+    if "CO" in pivot.columns:
+        pivot["CO"] = pivot["CO"] / 1000
 
-    # --- Fetch live weather ---
-    lat, lon = CITY_COORDS[city]
-    weather_url = (
-        f"https://api.open-meteo.com/v1/forecast?"
-        f"latitude={lat}&longitude={lon}&current="
-        f"temperature_2m,relative_humidity_2m,wind_speed_10m"
-    )
+    required_cols = ["PM2.5","PM10","NO2","SO2","CO","O3","NH3"]
+    for col in required_cols:
+        if col not in pivot.columns:
+            pivot[col] = median_values[col]
 
-    weather_data = requests.get(weather_url).json()["current"]
+    pivot = pivot[required_cols]
 
-    # Weather features
-    # pivot["temperature"] = weather_data["temperature_2m"]
-    # pivot["humidity"] = weather_data["relative_humidity_2m"]
-    # pivot["wind_speed"] = weather_data["wind_speed_10m"]
-
-    # --- Predict AQI ---
     prediction = model.predict(pivot)[0]
 
     insert_record(city, prediction)
 
     return jsonify({
-    "city": city,
-    "live_features": pivot.iloc[0].to_dict(),
-    "predicted_AQI": round(float(prediction), 2)
-})
+        "city": city,
+        "predicted_AQI": round(float(prediction), 2)
+    })
+
 
 @app.route("/history/<city>")
 def history(city):
-    data = fetch_history(city)
-
-    # data format: [(aqi, timestamp), ...]
+    data = fetch_history(city, limit=5)
     aqi_values = [row[0] for row in data][::-1]
     timestamps = [row[1] for row in data][::-1]
 
     return jsonify({
-        "city": city,
         "aqi_values": aqi_values,
         "timestamps": timestamps
     })
 
+
 @app.route("/forecast/<city>")
 def forecast(city):
     seq = get_last_aqi_sequence(city)
-    
+
     if seq is None:
-        return jsonify({
-            "city": city,
-            "error": "Not enough history for forecasting yet"
-        })
-    
+        return jsonify({"error": "Not enough history yet"})
+
     seq_array = np.array(seq).reshape(1, -1)
     next_aqi = forecast_model.predict(seq_array)[0]
-    
+
     return jsonify({
-        "city": city,
         "next_hour_AQI": round(float(next_aqi), 2)
     })
+
+
+@app.route("/states")
+def states():
+    params = {
+        "api-key": API_KEY,
+        "format": "json",
+        "limit": 1000
+    }
+
+    r = requests.get(AQI_URL, params=params)
+    records = r.json().get("records", [])
+
+    state_list = sorted(list(set(rec["state"] for rec in records)))
+    return jsonify(state_list)
+
+
+@app.route("/cities/<state>")
+def cities_by_state(state):
+    params = {
+        "api-key": API_KEY,
+        "format": "json",
+        "filters[state]": state,
+        "limit": 1000
+    }
+
+    r = requests.get(AQI_URL, params=params)
+    records = r.json().get("records", [])
+
+    city_list = sorted(list(set(rec["city"] for rec in records)))
+    return jsonify(city_list)
 
 
 if __name__ == "__main__":

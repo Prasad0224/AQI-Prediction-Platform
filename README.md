@@ -1,104 +1,69 @@
-# 🌍 Air Quality Prediction & Forecasting Platform
+# 🇮🇳 Air Quality Monitoring & Forecasting Platform
 
-A **real-time Air Quality Monitoring and Forecasting Web Application** that uses **Government of India live AQI data**, **Machine Learning**, and **Time-Series Forecasting** to predict current and next-hour Air Quality Index (AQI).
+A **real-time Air Quality Index (AQI) Monitoring and Forecasting Web Application** built using **Government of India CPCB live AQI data**, **Machine Learning**, and a **Flask-based web dashboard**.
 
-This project demonstrates an **end-to-end ML pipeline** — from data cleaning and model training to real-time API integration, database storage, and an interactive web dashboard.
+This project demonstrates a complete **end-to-end ML pipeline** — from live data collection and preprocessing to prediction, database storage, visualization, and short-term forecasting.
 
 ---
 
 ## 🚀 Features
-
-- 📡 Live AQI data from **Government of India CPCB API**
-- 🧠 Machine Learning model for **current AQI prediction**
-- 🕒 Time-series forecasting for **next-hour AQI prediction**
-- 🗄️ SQLite database for AQI history storage
-- 📈 Interactive AQI history chart (Chart.js)
-- 🌐 Flask backend REST API
-- 💻 Responsive Web Dashboard frontend
-
----
-
-## 🏗️ Project Architecture
-Frontend (HTML + CSS + JS + Chart.js)
-↓
-Flask Backend API
-↓
-Live Government AQI API + Weather API
-↓
-ML Model (Current AQI Prediction)
-↓
-SQLite Database (AQI History)
-↓
-Forecast Model (Next-Hour AQI)
-↓
-Dashboard Visualization
+✔ Live AQI data from **Government of India CPCB API**  
+✔ Machine Learning model for **current AQI prediction**  
+✔ Time-series model for **next-hour AQI forecasting**  
+✔ SQLite database for storing AQI history  
+✔ Interactive AQI trend chart (last 5 readings)  
+✔ Dynamic **State → City** selection  
+✔ Flask REST API backend  
+✔ Clean responsive web dashboard  
 
 ## ⚙️ Tech Stack
-
 - Python  
 - Pandas, NumPy  
 - Scikit-learn  
 - Flask + Flask-CORS  
 - SQLite  
 - Chart.js  
-- Government of India AQI API  
-- Open-Meteo Weather API  
-
----
+- Government of India CPCB AQI API  
 
 ## 🖥️ How to Run Locally
 
 ### 1️⃣ Install dependencies
-
 pip install -r requirements.txt
 
-### 2️⃣ Start Flask Backend
-
+### 2️⃣ Start Flask backend
 cd app/backend
 python app.py
 
 Backend runs at:
+http://127.0.0.1:5000
 
-http://127.0.0.1:5000/
-
-### 3️⃣ Open Frontend
-
-Open this file in your browser:
-
+### 3️⃣ Open frontend
+Open in browser:
 app/frontend/index.html
 
-## 📊 Dashboard Features
+### 4️⃣Seed database once
+To ensure every city has initial AQI history:
+cd app/backend
+python seed_history.py
 
-Current AQI prediction
+## 📊 Model Performance
+Current AQI Prediction Model-
+R² Score: 0.93
+MAE: ~17 AQI units
+RMSE: ~27 AQI units
 
+Next-Hour Forecast Model-
+MAE: ~5 AQI units
+
+## 🌍 Dashboard Capabilities
+Dynamic State → City selection
+Real-time AQI prediction
+Last 5 AQI trend visualization
 Next-hour AQI forecast
 
-AQI history trend chart
-
-Multi-city live monitoring
-
-## 🎯 Model Performance
-
-Current AQI Model
-
-R² Score: 0.93
-
-MAE: 16.97
-
-RMSE: 27.33
-
-Forecast Model
-
-MAE: ≈ 5 AQI units
-
-## 🌟 Project Highlights
-
-Real-time integration with government sensor data
-
-Robust handling of missing live sensor values
-
-Feature scaling and unit normalization
-
-End-to-end ML deployment pipeline
-
-Time-series forecasting implementation
+## 🎯 Project Highlights
+Uses official Government AQI data
+End-to-end ML deployment
+Real-time data processing
+Database-backed time-series forecasting
+Fully scalable architecture

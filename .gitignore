@@ -2,15 +2,15 @@
 __pycache__/
 *.pyc
 
-# Jupyter
+# Jupyter notebook checkpoints
 .ipynb_checkpoints/
 
-# Environment
+# Virtual environment
 venv/
 .env/
 
-# Model files
-models/*.pkl
+# Local database (runtime-generated)
+app/backend/database/aqi_data.db
 
 # OS files
 .DS_Store

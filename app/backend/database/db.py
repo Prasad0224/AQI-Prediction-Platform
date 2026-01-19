@@ -13,19 +13,30 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             city TEXT,
             predicted_aqi REAL,
+            temperature REAL,
+            humidity REAL,
+            wind_speed REAL,
             timestamp TEXT
         )
     """)
     conn.commit()
     conn.close()
 
-def insert_record(city, aqi):
+def insert_record(city, aqi, temp, humidity, wind):
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
-    c.execute(
-        "INSERT INTO aqi_history (city, predicted_aqi, timestamp) VALUES (?,?,?)",
-        (city, float(aqi), datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-    )
+    c.execute("""
+        INSERT INTO aqi_history 
+        (city, predicted_aqi, temperature, humidity, wind_speed, timestamp) 
+        VALUES (?,?,?,?,?,?)
+    """, (
+        city,
+        float(aqi),
+        float(temp),
+        float(humidity),
+        float(wind),
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    ))
     conn.commit()
     conn.close()
 
@@ -33,7 +44,7 @@ def fetch_history(city, limit=5):
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
     c.execute("""
-        SELECT predicted_aqi, timestamp 
+        SELECT predicted_aqi, temperature, humidity, wind_speed, timestamp
         FROM aqi_history 
         WHERE city=? 
         ORDER BY id DESC 

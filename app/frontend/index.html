@@ -1,146 +1,66 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>India AQI Dashboard</title>
+    <meta charset="UTF-8">
+    <title>AQI Prediction Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;600&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 
-<style>
-body {
-    font-family: 'Poppins', sans-serif;
-    background: linear-gradient(120deg, #74ebd5, #ACB6E5);
-    margin: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-}
+    <!-- CSS -->
+    <link rel="stylesheet" href="style.css">
 
-.container {
-    background: white;
-    padding: 35px;
-    border-radius: 10px;
-    box-shadow: 0 0 15px rgba(0,0,0,0.15);
-    text-align: center;
-    width: 420px;
-}
-
-select, button {
-    padding: 10px;
-    width: 85%;
-    margin-top: 8px;
-    font-size: 15px;
-}
-
-button {
-    background: #28a745;
-    color: white;
-    border: none;
-    cursor: pointer;
-}
-
-button:hover {
-    background: #218838;
-}
-
-.result {
-    margin-top: 10px;
-    font-weight: 500;
-}
-</style>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-
 <body>
-<div class="container">
-    <h2>🇮🇳 Live AQI Monitor</h2>
 
-    <select id="state" onchange="loadCities()"></select>
-    <select id="city"></select>
+<div class="app-container">
 
-    <button onclick="getAQI()">Predict AQI</button>
+    <header>
+        <h1>🌍 AQI Prediction Dashboard</h1>
+        <p>Live Air Quality & Weather Monitoring</p>
+    </header>
 
-    <div class="result" id="result"></div>
-    <div class="result" id="forecast"></div>
+    <div class="controls">
+        <select id="state"></select>
+        <select id="city"></select>
+        <button id="predictBtn">Predict AQI</button>
+    </div>
 
-    <canvas id="aqiChart"></canvas>
+    <div class="results">
+
+        <!-- Current AQI -->
+        <div class="card">
+            <h3>Current AQI</h3>
+            <p class="aqiNumber" id="aqiValue">--</p>
+            <span class="aqiStatus" id="aqiStatus">Waiting...</span>
+        </div>
+
+        <!-- Weather -->
+        <div class="card">
+            <h3>Weather</h3>
+            <p id="weatherValue">--</p>
+        </div>
+
+        <!-- Next Hour AQI -->
+        <div class="card">
+            <h3>Next Hour AQI</h3>
+            <p class="aqiNumber" id="forecastValue">--</p>
+            <span class="aqiStatus" id="forecastStatus">Waiting...</span>
+        </div>
+
+    </div>
+
+    <!-- Chart -->
+    <div class="chart-card">
+        <h3>AQI History</h3>
+        <canvas id="aqiChart"></canvas>
+    </div>
+
 </div>
 
-<script>
-let chart;
-
-window.onload = function() {
-    fetch("http://127.0.0.1:5000/states")
-    .then(res => res.json())
-    .then(states => {
-        let s = document.getElementById("state");
-        s.innerHTML = "";
-        states.forEach(st => s.innerHTML += `<option>${st}</option>`);
-        loadCities();
-    });
-};
-
-function loadCities() {
-    let state = document.getElementById("state").value;
-    fetch(`http://127.0.0.1:5000/cities/${state}`)
-    .then(res => res.json())
-    .then(cities => {
-        let c = document.getElementById("city");
-        c.innerHTML = "";
-        cities.forEach(ct => c.innerHTML += `<option>${ct}</option>`);
-    });
-}
-
-function getAQI() {
-    let city = document.getElementById("city").value;
-    let result = document.getElementById("result");
-    let forecast = document.getElementById("forecast");
-
-    result.innerHTML = "Loading...";
-    forecast.innerHTML = "";
-
-    fetch(`http://127.0.0.1:5000/predict/${city}`)
-    .then(res => res.json())
-    .then(data => {
-        if(data.error){
-            result.innerHTML = data.error;
-            return;
-        }
-        result.innerHTML = `Current AQI: <b>${data.predicted_AQI}</b>`;
-        return fetch(`http://127.0.0.1:5000/history/${city}`);
-    })
-    .then(res => res.json())
-    .then(hist => {
-        drawChart(hist.timestamps, hist.aqi_values);
-        return fetch(`http://127.0.0.1:5000/forecast/${city}`);
-    })
-    .then(res => res.json())
-    .then(fc => {
-        if(fc.error) forecast.innerHTML = fc.error;
-        else forecast.innerHTML = `Next Hour AQI: <b>${fc.next_hour_AQI}</b>`;
-    });
-}
-
-function drawChart(labels, values){
-    const ctx = document.getElementById("aqiChart");
-    if(chart) chart.destroy();
-
-    chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: "Last 5 AQI Readings",
-                data: values,
-                borderWidth: 2,
-                tension: 0.3,
-                fill: false
-            }]
-        },
-        options: { responsive:true }
-    });
-}
-</script>
+<script src="app.js"></script>
 </body>
 </html>
